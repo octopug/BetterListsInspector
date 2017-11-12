@@ -15,20 +15,8 @@ namespace BetterLists
     public class BetterListDrawer
     {
         private const float ExpandSpeed = 3f;
-        private const float HeaderHeight = 16f;
-        private const float HeaderSizeLabelOffset = 1f;
-        private const float HeaderPadding = 4f;
-        private const float EntryHeightBuffer = 4f;
-        private const float EntryLeftPadding = 10f;
-        private const float ElementIndexLabelOffset = -3f;
-        private const float DeleteEntryButtonWidth = 18f;
-        private const float ElementToDeleteButtonPadding = 3f;
-        private static readonly Color ElementIndexColour = new Color(0.5f, 0.5f, 0.5f, 0.5f);
-        private static readonly Color ElementIndexSelectedColour = new Color(1f, 1f, 1f, 0.8f);
 
         private readonly string _headerStringFormat;
-        private GUIContent _addButtonContent;
-        private GUIContent _deleteButtonContent;
         private SerializedProperty _property;
         private bool _addedElementSinceLastDraw;
         private GUIStyle _elementIndexLabelStyle;
@@ -52,23 +40,12 @@ namespace BetterLists
         // TODO(Matt): Add support for drag/drop items onto an array property to add them
         public BetterListDrawer(SerializedProperty property)
         {
-            // TODO(Matt): Re-use loaded icons and pass in
-            Texture addIcon = Resources.Load("reorderable_list.plus_icon") as Texture;
-            _addButtonContent = new GUIContent(addIcon);
-
-            Texture deleteIcon = Resources.Load("reorderable_list.minus_icon") as Texture;
-            _deleteButtonContent = new GUIContent(deleteIcon);
-
             _property = property;
 
-            _headerStringFormat = BuildHeaderStringFormat(_property);
+            _headerStringFormat = GuiTheme.Header.BuildStringFormat(_property);
             IsExpanded = new AnimBool(property.isExpanded) { speed = ExpandSpeed };
 
-            // TODO(Matt): Pass this in? Maybe move all GUI styles elsewhere
-            if (_elementIndexLabelStyle == null)
-            {
-                CreateElementIndexLabelStyle();
-            }
+            _elementIndexLabelStyle = new GUIStyle(GuiTheme.Entry.ElementIndex.Style);
 
             CreateList();
         }
@@ -89,7 +66,7 @@ namespace BetterLists
 
             List = new ReorderableList(Property.serializedObject, Property, draggable, header, add, remove)
             {
-                headerHeight = HeaderHeight + HeaderPadding
+                headerHeight = GuiTheme.Header.Height + GuiTheme.Header.Padding
             };
 
             List.displayAdd = false;
@@ -107,11 +84,8 @@ namespace BetterLists
             // (avoid input being detected in layout/repaint events)
             EventType evtType = Event.current.type;
 
-            var style = new GUIStyle(EditorStyles.foldout);
-            style.richText = true;
-
             string headerString = BuildHeaderString();
-            bool foldoutIsOpen = EditorGUILayout.Foldout(_property.isExpanded, headerString, true, style);
+            bool foldoutIsOpen = EditorGUILayout.Foldout(_property.isExpanded, headerString, true, GuiTheme.Buttons.ArrayFoldoutStyle);
             if (foldoutIsOpen != _property.isExpanded)
             {
                 bool consumedInputEvent =
@@ -136,31 +110,31 @@ namespace BetterLists
 
         private void DrawHeader(Rect rect)
         {
-            rect.height -= HeaderPadding;
-            rect.width -= (ElementToDeleteButtonPadding + DeleteEntryButtonWidth) * 2;
-            rect.y += HeaderSizeLabelOffset;
+            rect.height -= GuiTheme.Header.Padding;
+            rect.width -= (GuiTheme.Entry.DeleteButtonPadding + GuiTheme.Buttons.AddOrDeleteWidth) * 2;
+            rect.y += GuiTheme.Header.SizeLabelOffset;
 
             // TODO(Matt): Cleanup the size label placement
             int desiredSize = EditorGUI.DelayedIntField(rect, "Size:", List.count);
             List.SetSize(desiredSize);
 
             // Draw add button
-            rect.x = rect.xMax + ElementToDeleteButtonPadding;
-            rect.width = DeleteEntryButtonWidth;
+            rect.x = rect.xMax + GuiTheme.Entry.DeleteButtonPadding;
+            rect.width = GuiTheme.Buttons.AddOrDeleteWidth;
 
-            if (GUI.Button(rect, _addButtonContent))
+            if (GUI.Button(rect, GuiTheme.Buttons.AddIcon))
             {
                 List.SetSize(List.count + 1);
             }
 
             // Draw delete button
-            rect.x = rect.xMax + ElementToDeleteButtonPadding;
-            rect.width = DeleteEntryButtonWidth;
+            rect.x = rect.xMax + GuiTheme.Entry.DeleteButtonPadding;
+            rect.width = GuiTheme.Buttons.AddOrDeleteWidth;
             // TODO(Matt): Delay delete until next frame
 
             bool wasEnabled = GUI.enabled;
             GUI.enabled = List.count > 0;
-            if (GUI.Button(rect, _deleteButtonContent))
+            if (GUI.Button(rect, GuiTheme.Buttons.DeleteIcon))
             {
                 Property.DeleteArrayElementAtIndex(List.count - 1);
             }
@@ -176,11 +150,11 @@ namespace BetterLists
             rect.y += 1; // TODO(Matt): Move magic number to const
 
             // Some types contain children, we need to indent to avoid overlap with the drag control and the foldout button
-            float propertyWidth = rect.width - (ElementToDeleteButtonPadding + DeleteEntryButtonWidth);
+            float propertyWidth = rect.width - (GuiTheme.Entry.DeleteButtonPadding + GuiTheme.Buttons.AddOrDeleteWidth);
             if (entry.propertyType == SerializedPropertyType.Generic)
             {
-                rect.x += EntryLeftPadding;
-                propertyWidth -= EntryLeftPadding;
+                rect.x += GuiTheme.Entry.LeftPadding;
+                propertyWidth -= GuiTheme.Entry.LeftPadding;
             }
 
             // Draw an index label
@@ -195,7 +169,7 @@ namespace BetterLists
 
             rect.width = propertyWidth;
             EditorGUI.PropertyField(rect, entry, GUIContent.none, true);
-            List.elementHeight = rect.height + EntryHeightBuffer;
+            List.elementHeight = rect.height + GuiTheme.Entry.HeightBuffer;
 
             // Draw name label
             if (ShouldShowEntryDisplayName(entry))
@@ -224,10 +198,10 @@ namespace BetterLists
             }
 
             // Draw delete button
-            rect.x = rect.xMax + ElementToDeleteButtonPadding;
-            rect.width = DeleteEntryButtonWidth;
+            rect.x = rect.xMax + GuiTheme.Entry.DeleteButtonPadding;
+            rect.width = GuiTheme.Buttons.AddOrDeleteWidth;
 
-            if (GUI.Button(rect, _deleteButtonContent))
+            if (GUI.Button(rect, GuiTheme.Buttons.DeleteIcon))
             {
                 Property.DeleteArrayElementAtIndex(index);
             }
@@ -236,9 +210,9 @@ namespace BetterLists
         private void DrawElementIndexLabel(Rect rect, int index)
         {
             bool isSelected = index == List.GetSelectedElementIndex();
-            _elementIndexLabelStyle.normal.textColor = isSelected ? ElementIndexSelectedColour : ElementIndexColour;
+            _elementIndexLabelStyle.normal.textColor = isSelected ? GuiTheme.Entry.ElementIndex.SelectedColour : GuiTheme.Entry.ElementIndex.Colour;
 
-            rect.x += ElementIndexLabelOffset;
+            rect.x += GuiTheme.Entry.ElementIndex.LabelOffset;
             rect.width = _elementIndexLabelStyle.fixedWidth;
             EditorGUI.LabelField(rect, index.ToString(), _elementIndexLabelStyle);
         }
@@ -247,7 +221,7 @@ namespace BetterLists
         {
             SerializedProperty entry = _property.GetArrayElementAtIndex(index);
             float propHeight = EditorGUI.GetPropertyHeight(entry, GUIContent.none, true);
-            return Mathf.Max(EditorGUIUtility.singleLineHeight, propHeight) + EntryHeightBuffer;
+            return Mathf.Max(EditorGUIUtility.singleLineHeight, propHeight) + GuiTheme.Entry.HeightBuffer;
         }
 
         private void AddElement()
@@ -274,13 +248,6 @@ namespace BetterLists
             _elementIndexLabelStyle.fixedWidth = minWidth;
         }
 
-        private void CreateElementIndexLabelStyle()
-        {
-            _elementIndexLabelStyle = new GUIStyle(GUI.skin.label);
-            _elementIndexLabelStyle.stretchWidth = false;
-            _elementIndexLabelStyle.alignment = TextAnchor.MiddleCenter;
-        }
-
         private string BuildHeaderString()
         {
             return string.Format(_headerStringFormat, _property.arraySize);
@@ -289,30 +256,6 @@ namespace BetterLists
         private bool ShouldShowEntryDisplayName(SerializedProperty property)
         {
             return property.propertyType == SerializedPropertyType.Generic;
-        }
-
-        private static string BuildHeaderStringFormat(SerializedProperty property)
-        {
-            const string format = "{0}   <color=grey><size=10>{1}[{2}]</size></color>";
-            if (property.propertyType != SerializedPropertyType.Generic)
-            {
-                return string.Format(format, property.displayName, property.propertyType);
-            }
-            else
-            {
-                // TODO(Matt): Does this work for all types, looking at our inspector not all have a $ sign?
-                // Some types are prepended with the string below (e.g. AudioClip), strip it
-                const string pptrStr = "PPtr<$";
-                string elementType = property.arrayElementType;
-                if (elementType.StartsWith(pptrStr))
-                {
-                    int closingChevronIndex = elementType.IndexOf('>');
-                    elementType = elementType.Substring(pptrStr.Length, closingChevronIndex - pptrStr.Length);
-                }
-
-                // Return format, replacing the {2} above with {0} so it can be formatted again
-                return string.Format(format, property.displayName, elementType, "{0}");
-            }
         }
     }
 }
