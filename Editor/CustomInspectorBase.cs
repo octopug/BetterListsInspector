@@ -32,13 +32,6 @@ namespace BetterLists
             _listDrawers = new Dictionary<string, BetterListDrawer>(10);
         }
 
-        // TODO(Matt): Do we need this destructor?
-        ~CustomInspectorBase()
-        {
-            _listDrawers.Clear();
-            _listDrawers = null;
-        }
-
         // TODO(Matt): Fix issues with width causing horizontal scrolling
         public override void OnInspectorGUI()
         {
@@ -71,9 +64,10 @@ namespace BetterLists
             bool isDefaultScriptProperty = property.name.Equals("m_Script") && property.type.Equals("PPtr<MonoScript>") && property.propertyType == SerializedPropertyType.ObjectReference && property.propertyPath.Equals("m_Script");
             if (isDefaultScriptProperty)
             {
+                bool wasEnabled = GUI.enabled;
                 GUI.enabled = false;
                 EditorGUILayout.PropertyField(property, property.isExpanded);
-                GUI.enabled = true;
+                GUI.enabled = wasEnabled;
             }
             else
             {

@@ -50,13 +50,6 @@ namespace BetterLists
             CreateList();
         }
 
-        // TODO(Matt): Do we need this destructor?
-        ~BetterListDrawer()
-        {
-            _property = null;
-            List = null;
-        }
-
         private void CreateList()
         {
             bool draggable = true;
