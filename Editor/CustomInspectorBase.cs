@@ -24,19 +24,19 @@ namespace BetterLists
             BindingFlags.NonPublic |
             BindingFlags.Public;
 
-        private Dictionary<string, ReorderableListDrawer> _reorderableLists;
+        private Dictionary<string, BetterListDrawer> _listDrawers;
         private bool _requiresRepaint;
 
         protected virtual void OnEnable()
         {
-            _reorderableLists = new Dictionary<string, ReorderableListDrawer>(10);
+            _listDrawers = new Dictionary<string, BetterListDrawer>(10);
         }
 
         // TODO(Matt): Do we need this destructor?
         ~CustomInspectorBase()
         {
-            _reorderableLists.Clear();
-            _reorderableLists = null;
+            _listDrawers.Clear();
+            _listDrawers = null;
         }
 
         // TODO(Matt): Fix issues with width causing horizontal scrolling
@@ -91,7 +91,7 @@ namespace BetterLists
 
         protected void DrawArray(SerializedProperty property)
         {
-            var listDrawer = GetOrCreateReorderableList(property);
+            var listDrawer = GetOrCreateListDrawer(property);
             listDrawer.DrawFoldoutControl();
 
             // Draw list if expanded or animating
@@ -119,17 +119,17 @@ namespace BetterLists
             _requiresRepaint |= listDrawer.IsExpanded.isAnimating || listDrawer.ToggleExpandNextRepaint;
         }
 
-        private ReorderableListDrawer GetOrCreateReorderableList(SerializedProperty property)
+        private BetterListDrawer GetOrCreateListDrawer(SerializedProperty property)
         {
-            ReorderableListDrawer listDrawer = null;
-            if (_reorderableLists.TryGetValue(property.name, out listDrawer))
+            BetterListDrawer listDrawer = null;
+            if (_listDrawers.TryGetValue(property.name, out listDrawer))
             {
                 listDrawer.Property = property;
                 return listDrawer;
             }
 
-            listDrawer = new ReorderableListDrawer(property);
-            _reorderableLists.Add(property.name, listDrawer);
+            listDrawer = new BetterListDrawer(property);
+            _listDrawers.Add(property.name, listDrawer);
             return listDrawer;
         }
 
